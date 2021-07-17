@@ -17,6 +17,7 @@
       git
       utillinux
       cacert
+      nix-prefetch-git
       ;
 
     nixTest =
