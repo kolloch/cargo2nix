@@ -9,6 +9,7 @@
 , lib ? pkgs.lib
 , stdenv ? pkgs.stdenv
 , strictDeprecation ? true
+, defaultGitBranchName ? "master"
 }:
 let
   cargoNix = import ./crate2nix/Cargo.nix { inherit pkgs strictDeprecation; };
@@ -234,7 +235,7 @@ rec {
             src = builtins.fetchGit {
               submodules = true;
               inherit (parsed) url rev;
-              ref = attrs.branch or "master";
+              ref = attrs.branch or defaultGitBranchName;
             };
             hash = pkgs.runCommand "hash-of-${attrs.name}" { nativeBuildInputs = [ pkgs.nix ]; } ''
               echo -n "$(nix-hash --type sha256 ${src})" > $out
