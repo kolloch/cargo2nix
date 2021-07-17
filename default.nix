@@ -5,13 +5,14 @@
 , cargo ? pkgs.cargo
 , nix ? pkgs.nix
 , makeWrapper ? pkgs.makeWrapper
+, callPackage ? pkgs.callPackage
 , darwin ? pkgs.darwin
 , stdenv ? pkgs.stdenv
 , defaultCrateOverrides ? pkgs.defaultCrateOverrides
 , release ? true
 }:
 let
-  cargoNix = import ./crate2nix/Cargo.nix { inherit pkgs release; };
+  cargoNix = callPackage ./crate2nix/Cargo.nix { inherit release; };
   withoutTemplates = name: type:
     let
       baseName = builtins.baseNameOf (builtins.toString name);

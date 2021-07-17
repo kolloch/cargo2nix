@@ -107,7 +107,7 @@ Within a nix file (e.g. your manually written `default.nix`), you can access the
 derivation like this:
 
 ```nix
-let cargo_nix = import ./Cargo.nix { inherit pkgs; };
+let cargo_nix = callPackage ./Cargo.nix {};
 in cargo_nix.rootCrate.build
 ```
 
@@ -130,7 +130,7 @@ Within a nix file (e.g. your manually written `default.nix`), you can access the
 derivation like this:
 
 ```nix
-let cargo_nix = import ./Cargo.nix { inherit pkgs; };
+let cargo_nix = callPackage ./Cargo.nix {};
 in cargo_nix.workspaceMembers."${your_crate_name}".build
 ```
 
@@ -189,7 +189,7 @@ that pinned `pkgs` with the rust version of your choice:
 ```nix
 { pkgs ? import ./nix/nixpkgs.nix }:
 
-let cargoNix = import ./Cargo.nix { inherit pkgs; };
+let cargoNix = pkgs.callPackage ./Cargo.nix {};
 in cargoNix.rootCrate.build
 ```
 
@@ -204,10 +204,10 @@ The enabled features for a crate now are resolved at build time! That means you 
       nix build -f ....nix --arg rootFeatures '["default" "other"]' rootCrate.build
       ```
 
-2. Or when importing the build file:
+2. Or when importing the build file with "callPackage":
 
       ```nix
-      let cargo_nix = import ./Cargo.nix { inherit pkgs; rootFeatures = ["default" "other"]; };
+      let cargo_nix = callPackage ./Cargo.nix { rootFeatures = ["default" "other"]; };
           crate2nix = cargo_nix.rootCrate.build;
       in ...
       ```
@@ -215,7 +215,7 @@ The enabled features for a crate now are resolved at build time! That means you 
 3. Or by overriding them on the rootCrate or workspaceMembers:
 
       ```nix
-      let cargo_nix = import ./Cargo.nix { inherit pkgs; };
+      let cargo_nix = callPackage ./Cargo.nix {};
           crate2nix = cargo_nix.rootCrate.build.override { features = ["default" "other"]; };
       in ...
       ```
@@ -243,8 +243,7 @@ let
       };
     };
   };
-  generatedBuild = import ./crate2nix/Cargo.nix {
-    inherit pkgs;
+  generatedBuild = callPackage ./crate2nix/Cargo.nix {
     buildRustCrateForPkgs = customBuildRustCrateForPkgs;
   };
 in generatedBuild.rootCrate.build
@@ -264,8 +263,7 @@ let
       };
     };
   };
-  generatedBuild = import ./crate2nix/Cargo.nix {
-    inherit pkgs;
+  generatedBuild = callPackage ./crate2nix/Cargo.nix {
     buildRustCrateForPkgs = customBuildRustCrateForPkgs;
   };
 in generatedBuild.rootCrate.build
@@ -285,7 +283,7 @@ execution (`runTests = true;`), failing tests will make the whole build fail
 unless you explicitly disable this via test hooks: see the section below.
 
 ```nix
-      let cargo_nix = import ./Cargo.nix { inherit pkgs; };
+      let cargo_nix = callPackage ./Cargo.nix {};
           crate2nix = cargo_nix.rootCrate.build.override {
 	    runTests = true;
 	    testInputs = [ pkgs.cowsay ];
@@ -311,14 +309,6 @@ the actual test command, and in the same shell. Some example use-cases include:
   not flaky and you want to cache failures.
 
 ## FAQ
-
-#### I get a warning about `buildRustCrate` being deprecated in favor of `buildRustCrateForPkgs`
-
-First, this warning only matters if you care about cross-compilation.
-
-You are calling `./Cargo.nix` with the option `buildRustCrate`:
-* either implicitely with callPackage (because nixpkgs contains an attribute called `buildRustCrate`) `callPackage ./Cargo.nix {}`: use import instead and pass the `pkgs` argument explicitely: `import ./Cargo.nix { inherit pkgs; }`
-* or explicitly (`import ./Cargo.nix { inherit pkgs; buildRustCrate = ...; }`). In this case you should migrate to `buildRustCrateForPkgs`: `import ./Cargo.nix { inherit pkgs; buildRustCrateForPkgs = package_set: ...; }`. `buildRustCrateForPkgs` should be a function taking a package set `package_set` and returning the same value as `buildRustCrate` but taking its constituent derivations in `package_set`. The default value is only `package_set: package_set.buildRustCrate` and the value you used to pass as `buildRustCrate` should be equal to `buildRustCrateForPkgs pkgs`.
 
 ## Known Restrictions
 

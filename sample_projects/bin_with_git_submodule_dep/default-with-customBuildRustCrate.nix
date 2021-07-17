@@ -2,7 +2,7 @@
 , generatedCargoNix ? ./Cargo.nix
 }:
 let
-  customBuildRustCrate = pkgs.buildRustCrate.override {
+  customBuildRustCrate = pkgs: pkgs.buildRustCrate.override {
     defaultCrateOverrides = pkgs.defaultCrateOverrides // {
       librocksdb-sys = attrs: with pkgs; {
         src = attrs.src + "/librocksdb-sys";
@@ -12,7 +12,7 @@ let
       };
     };
   };
-  basePackage = pkgs.callPackage generatedCargoNix { buildRustCrate = customBuildRustCrate; };
+  basePackage = pkgs.callPackage generatedCargoNix { buildRustCrateForPkgs = customBuildRustCrate; };
   submodulePackage = basePackage.rootCrate.build;
 in
 submodulePackage

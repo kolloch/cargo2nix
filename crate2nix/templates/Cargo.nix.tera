@@ -9,11 +9,7 @@
 , pkgs ? import nixpkgs { config = {}; }
 , lib ? pkgs.lib
 , stdenv ? pkgs.stdenv
-, buildRustCrateForPkgs ? if buildRustCrate != null
-    then lib.warn "crate2nix: Passing `buildRustCrate` as argument to Cargo.nix is deprecated. If you don't customize `buildRustCrate`, replace `callPackage ./Cargo.nix {}` by `import ./Cargo.nix { inherit pkgs; }`, and if you need to customize `buildRustCrate`, use `buildRustCrateForPkgs` instead." (_: buildRustCrate)
-    else pkgs: pkgs.buildRustCrate
-  # Deprecated
-, buildRustCrate ? null
+, buildRustCrateForPkgs ? pkgs: pkgs.buildRustCrate
   # This is used as the `crateOverrides` argument for `buildRustCrate`.
 , defaultCrateOverrides ? pkgs.defaultCrateOverrides
   # The features to enable for the root_crate or the workspace_members.

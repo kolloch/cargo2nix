@@ -1,5 +1,14 @@
 # 0.10.x - 0.11.0 (not released)
 
+## Remove `buildRustCrate` parameter
+
+This was previously deprecated.
+
+## Restore `callPackage` not raw `import` as the recommended method
+
+With `buildRustCrate` removed, this is now possible without running into
+issues.
+
 # 0.9.x - 0.10.0
 
 Help needed! I don't have the resources to meaningfully advance this project. Thank
