@@ -4,10 +4,10 @@ use std::io::{BufRead, Write};
 use std::path::Path;
 use std::{fs::File, iter};
 
-use crate::target_cfg::{Cfg, CfgExpr};
 use crate::{BuildInfo, GenerateInfo};
 use anyhow::format_err;
 use anyhow::{bail, Error};
+use cargo_platform::{Cfg, CfgExpr};
 use itertools::Itertools;
 use lazy_static::lazy_static;
 use serde::Serialize;
@@ -256,8 +256,7 @@ fn test_render_cfg_to_nix_expr() {
     }
 
     fn kv(key: &str, value: &str) -> CfgExpr {
-        use crate::target_cfg::Cfg::KeyPair;
-        CfgExpr::Value(KeyPair(key.to_string(), value.to_string()))
+        CfgExpr::Value(Cfg::KeyPair(key.to_string(), value.to_string()))
     }
 
     assert_eq!(

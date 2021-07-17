@@ -7,6 +7,7 @@ use cargo_metadata::Package;
 use cargo_metadata::PackageId;
 use cargo_metadata::{Dependency, Source};
 use cargo_metadata::{DependencyKind, Target};
+use cargo_platform::Platform;
 use pathdiff::diff_paths;
 use semver::Version;
 use serde::Deserialize;
@@ -80,7 +81,7 @@ impl CrateDerivation {
         let package_path = package.manifest_path.parent().unwrap_or_else(|| {
             panic!(
                 "WUUT? No parent directory of manifest at {}?",
-                package.manifest_path.to_str().unwrap()
+                package.manifest_path.as_str()
             )
         });
 
@@ -89,12 +90,9 @@ impl CrateDerivation {
         let configured_source = if is_root_or_workspace_member {
             // In the resolved data, we don't have the link to the workspace member
             // name anymore. So we need to extract it from the path.
-            let configured_source = package_path.file_name().and_then(|file_name| {
-                crate2nix_json
-                    .sources
-                    .get(&file_name.to_string_lossy().to_string())
-                    .cloned()
-            });
+            let configured_source = package_path
+                .file_name()
+                .and_then(|file_name| crate2nix_json.sources.get(&*file_name).cloned());
 
             if !crate2nix_json.sources.is_empty() && configured_source.is_none() {
                 eprintln!(
@@ -117,7 +115,7 @@ impl CrateDerivation {
         let package_path = package_path.canonicalize().map_err(|e| {
             format_err!(
                 "while canonicalizing crate path path {}: {}",
-                package_path.to_str().unwrap(),
+                package_path.as_str(),
                 e
             )
         })?;
@@ -235,6 +233,7 @@ pub fn minimal_resolve() {
 
 #[test]
 pub fn configured_source_is_used_instead_of_local_directory() {
+    use std::convert::TryInto;
     use std::str::FromStr;
 
     let mut env = test::MetadataEnv::default();
@@ -256,7 +255,7 @@ pub fn configured_source_is_used_instead_of_local_directory() {
     let manifest_path = workspace_with_symlink.join("some_crate").join("Cargo.toml");
 
     let mut main = env.add_package_and_node("main");
-    main.update_package(|p| p.manifest_path = manifest_path);
+    main.update_package(|p| p.manifest_path = manifest_path.try_into().unwrap());
     main.make_root();
 
     let indexed = env.indexed_metadata();
@@ -724,8 +723,8 @@ impl<'a> ResolvedDependencies<'a> {
                             packages.iter().find(|p| {
                                 let without_metadata = {
                                     let mut version = p.version.clone();
-                                    version.pre = vec![];
-                                    version.build = vec![];
+                                    version.pre = semver::Prerelease::EMPTY;
+                                    version.build = semver::BuildMetadata::EMPTY;
                                     version
                                 };
                                 package_dep.req.matches(&without_metadata)
@@ -739,7 +738,7 @@ impl<'a> ResolvedDependencies<'a> {
                     name: package_dep.name.clone(),
                     rename: package_dep.rename.clone(),
                     package_id: dep_package.id.clone(),
-                    target: package_dep.target.as_ref().map(|t| t.to_string()),
+                    target: package_dep.target.clone(),
                     optional: package_dep.optional,
                     uses_default_features: package_dep.uses_default_features,
                     features: package_dep.features.clone(),
@@ -859,7 +858,7 @@ pub struct ResolvedDependency {
     pub package_id: PackageId,
     /// The cfg expression for conditionally enabling the dependency (if any).
     /// Can also be a target "triplet".
-    pub target: Option<String>,
+    pub target: Option<Platform>,
     /// Whether this dependency is optional and thus needs to be enabled via a feature.
     pub optional: bool,
     /// Whether the crate uses this dependency with default features enabled.

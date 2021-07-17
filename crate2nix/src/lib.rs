@@ -37,7 +37,6 @@ mod prefetch;
 pub mod render;
 mod resolve;
 pub mod sources;
-mod target_cfg;
 #[cfg(test)]
 pub mod test;
 pub mod util;
@@ -164,7 +163,8 @@ fn cargo_metadata(config: &GenerateConfig, cargo_toml: &Path) -> Result<Metadata
     let mut cmd = cargo_metadata::MetadataCommand::new();
     let mut other_options = config.other_metadata_options.clone();
     other_options.push("--locked".into());
-    cmd.manifest_path(&cargo_toml).other_options(&other_options);
+    cmd.manifest_path(&cargo_toml)
+        .other_options(&*other_options);
     cmd.exec().map_err(|e| {
         format_err!(
             "while retrieving metadata about {}: {}",

@@ -8,19 +8,21 @@ description = "crate2nix generates nix (as in NixOS) build files for rust using 
 repository = "https://github.com/kolloch/crate2nix"
 readme = "../README.md"
 keywords = ["nixos", "nix", "cargo", "build"]
+resolver = "2"
 
 [dependencies]
 anyhow = "1.0.28"
-cargo_metadata = "0.9"
+cargo_metadata = "0.14"
+cargo-platform = "0.1"
 hex = "0.4"
 itertools = "0.9"
 lazy_static = "1"
 nix-base32 = "0.1"
 pathdiff = "0.1"
 structopt = "0.3"
-semver = "0.9"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+semver = { version = "1", features = ["serde"] }
+serde = { version = "1.0.107", features = ["derive"] }
+serde_json = { version = "1.0.59", features = ["unbounded_depth"] }
 tera = { version = "1", default-features = false }
 toml = "0.5"
 url = "1"
