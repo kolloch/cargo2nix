@@ -1,4 +1,4 @@
-{ lib, crate2nix }:
+{ lib, crate2nix, stdenv }:
 let
   fakeCrates = {
     "pkg_id1" = "pkg_id1";
@@ -24,7 +24,7 @@ let
   dependencyDerivations = features: dependencies:
     crate2nix.dependencyDerivations {
       buildByPackageId = p: fakeCrates.${p};
-      target = crate2nix.defaultTarget;
+      target = crate2nix.makeDefaultTarget (stdenv.hostPlatform);
       inherit features dependencies;
     };
 in

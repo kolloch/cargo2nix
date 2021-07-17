@@ -1,4 +1,4 @@
-{ lib, crate2nix }:
+{ lib, crate2nix, stdenv }:
 let
   crateConfigs = {
     "pkg_root" = {
@@ -87,7 +87,7 @@ let
     packageId: features:
     crate2nix.mergePackageFeatures
       {
-        target = crate2nix.defaultTarget;
+        target = crate2nix.makeDefaultTarget (stdenv.hostPlatform);
         runTests = false;
         rootPackageId = packageId;
         inherit crateConfigs packageId features;

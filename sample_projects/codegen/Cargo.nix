@@ -482,26 +482,26 @@ rec {
   /* Target (platform) data for conditional dependencies.
     This corresponds roughly to what buildRustCrate is setting.
   */
-  defaultTarget = {
-    unix = true;
-    windows = false;
+  makeDefaultTarget = platform: {
+    unix = platform.isUnix;
+    windows = platform.isWindows;
     fuchsia = true;
     test = false;
 
     # This doesn't appear to be officially documented anywhere yet.
     # See https://github.com/rust-lang-nursery/rust-forge/issues/101.
     os =
-      if stdenv.hostPlatform.isDarwin
+      if platform.isDarwin
       then "macos"
-      else stdenv.hostPlatform.parsed.kernel.name;
-    arch = stdenv.hostPlatform.parsed.cpu.name;
+      else platform.parsed.kernel.name;
+    arch = platform.parsed.cpu.name;
     family = "unix";
     env = "gnu";
     endian =
-      if stdenv.hostPlatform.parsed.cpu.significantByte.name == "littleEndian"
+      if platform.parsed.cpu.significantByte.name == "littleEndian"
       then "little" else "big";
-    pointer_width = toString stdenv.hostPlatform.parsed.cpu.bits;
-    vendor = stdenv.hostPlatform.parsed.vendor.name;
+    pointer_width = toString platform.parsed.cpu.bits;
+    vendor = platform.parsed.vendor.name;
     debug_assertions = false;
   };
 
@@ -704,12 +704,12 @@ rec {
     , crateConfigs ? crates
     , buildRustCrateForPkgsFunc
     , runTests
-    , target ? defaultTarget
+    , makeTarget ? makeDefaultTarget
     } @ args:
       assert (builtins.isAttrs crateConfigs);
       assert (builtins.isString packageId);
       assert (builtins.isList features);
-      assert (builtins.isAttrs target);
+      assert (builtins.isAttrs (makeTarget stdenv.hostPlatform));
       assert (builtins.isBool runTests);
       let
         rootPackageId = packageId;
@@ -717,7 +717,7 @@ rec {
           (
             args // {
               inherit rootPackageId;
-              target = target // { test = runTests; };
+              target = makeTarget stdenv.hostPlatform // { test = runTests; };
             }
           );
         # Memoize built packages so that reappearing packages are only built once.
@@ -726,6 +726,7 @@ rec {
           let
             self = {
               crates = lib.mapAttrs (packageId: value: buildByPackageIdForPkgsImpl self pkgs packageId) crateConfigs;
+              target = makeTarget pkgs.stdenv.hostPlatform;
               build = mkBuiltByPackageIdByPkgs pkgs.buildPackages;
             };
           in
@@ -742,7 +743,8 @@ rec {
                 (crateConfig'.devDependencies or [ ]);
             dependencies =
               dependencyDerivations {
-                inherit features target;
+                inherit features;
+                inherit (self) target;
                 buildByPackageId = depPackageId:
                   # proc_macro crates must be compiled for the build architecture
                   if crateConfigs.${depPackageId}.procMacro or false
@@ -754,24 +756,23 @@ rec {
               };
             buildDependencies =
               dependencyDerivations {
-                inherit features target;
+                inherit features;
+                inherit (self.build) target;
                 buildByPackageId = depPackageId:
                   self.build.crates.${depPackageId};
                 dependencies = crateConfig.buildDependencies or [ ];
               };
-            filterEnabledDependenciesForThis = dependencies: filterEnabledDependencies {
-              inherit dependencies features target;
-            };
             dependenciesWithRenames =
               lib.filter (d: d ? "rename")
-                (
-                  filterEnabledDependenciesForThis
-                    (
-                      (crateConfig.buildDependencies or [ ])
-                      ++ (crateConfig.dependencies or [ ])
-                      ++ devDependencies
-                    )
-                );
+                (filterEnabledDependencies {
+                  inherit features;
+                  inherit (self.build) target;
+                  dependencies = crateConfig.buildDependencies or [ ];
+                } ++ filterEnabledDependencies {
+                  inherit features;
+                  inherit (self) target;
+                  dependencies = crateConfig.dependencies or [ ] ++ devDependencies;
+                });
             # Crate renames have the form:
             #
             # {
@@ -846,7 +847,7 @@ rec {
     else val;
 
   /* Returns various tools to debug a crate. */
-  debugCrate = { packageId, target ? defaultTarget }:
+  debugCrate = { packageId, target ? makeDefaultTarget stdenv.hostPlatform }:
     assert (builtins.isString packageId);
     let
       debug = rec {
