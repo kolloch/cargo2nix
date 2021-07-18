@@ -421,6 +421,13 @@ let
     }
 
     {
+      name = "workspace_with_nondefault_lib";
+      src = ./sample_projects/workspace_with_nondefault_lib;
+      expectedOutput = "Hello, workspace_with_nondefault_lib";
+      derivationAttrPath = [ "workspaceMembers" "main" ];
+    }
+
+    {
       name = "with_problematic_crates";
       src = ./sample_projects/with_problematic_crates;
       expectedOutput = "Hello, with_problematic_crates!";
@@ -436,7 +443,6 @@ let
       # FIXME: https://github.com/kolloch/crate2nix/issues/83
       skip = true;
     }
-
   ];
   buildTestDerivationAttrSet =
     let
